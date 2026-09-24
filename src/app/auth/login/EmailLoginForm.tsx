@@ -68,7 +68,7 @@ export function EmailLoginForm() {
           placeholder="Display Name" 
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full p-3 border border-gray-200 rounded-xl"
+          className="w-full p-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400"
           required={!isLogin}
         />
       )}
@@ -77,7 +77,7 @@ export function EmailLoginForm() {
         placeholder="Email Address" 
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="w-full p-3 border border-gray-200 rounded-xl"
+        className="w-full p-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400"
         required
       />
       <input 
@@ -85,7 +85,7 @@ export function EmailLoginForm() {
         placeholder="Password" 
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="w-full p-3 border border-gray-200 rounded-xl"
+        className="w-full p-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400"
         required
         minLength={6}
       />
