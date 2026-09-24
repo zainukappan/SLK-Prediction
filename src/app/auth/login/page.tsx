@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Image from 'next/image'
 import { getTranslation } from '@/lib/i18n'
+import { signInWithGoogle } from './actions'
 
 export default async function LoginPage() {
   const supabase = await createClient()
@@ -35,7 +36,7 @@ export default async function LoginPage() {
           This is a private contest for SBK members. Please sign in to request access.
         </p>
         
-        <form action="/auth/login/google" method="post">
+        <form action={signInWithGoogle}>
           <button 
             type="submit"
             className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-200 text-gray-700 font-bold py-3 px-4 rounded-xl hover:bg-gray-50 transition-colors"
