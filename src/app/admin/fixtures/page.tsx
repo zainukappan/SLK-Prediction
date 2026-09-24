@@ -31,7 +31,10 @@ export default async function AdminFixturesPage() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <h2 className="text-xl font-bold text-sbk-navy mb-6">Create Fixture</h2>
           
-          <form action={createFixture} className="space-y-4">
+          <form action={async (formData) => {
+            'use server'
+            await createFixture(formData)
+          }} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Round</label>
               <select name="round_id" className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-900" required>
@@ -76,11 +79,14 @@ export default async function AdminFixturesPage() {
                 <div>
                   <div className="font-bold text-sm text-gray-900">{f.home_team?.short_name || 'TBD'} vs {f.away_team?.short_name || 'TBD'}</div>
                   <div className="text-xs text-gray-500">
-                    {formatInTimeZone(new Date(f.kickoff_time), 'Asia/Kolkata', "MMM d, yyyy h:mm a")} IST
+                    {f.kickoff_time ? formatInTimeZone(new Date(f.kickoff_time), 'Asia/Kolkata', "MMM d, yyyy h:mm a") + ' IST' : 'TBD'}
                   </div>
                   <div className="text-xs font-bold mt-1 text-sbk-blue uppercase">{f.status}</div>
                 </div>
-                <form action={deleteFixture.bind(null, f.id)}>
+                <form action={async () => {
+                  'use server'
+                  await deleteFixture(f.id)
+                }}>
                   <button className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
                     <Trash2 className="w-4 h-4" />
                   </button>
