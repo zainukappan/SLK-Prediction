@@ -74,7 +74,7 @@ export default async function AdminFixturesPage() {
             {fixtures?.map(f => (
               <div key={f.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <div>
-                  <div className="font-bold text-sm text-gray-900">{f.home_team.short_name} vs {f.away_team.short_name}</div>
+                  <div className="font-bold text-sm text-gray-900">{f.home_team?.short_name || 'TBD'} vs {f.away_team?.short_name || 'TBD'}</div>
                   <div className="text-xs text-gray-500">
                     {formatInTimeZone(new Date(f.kickoff_time), 'Asia/Kolkata', "MMM d, yyyy h:mm a")} IST
                   </div>
