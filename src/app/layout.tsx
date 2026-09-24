@@ -42,10 +42,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900 pb-16`}
       >
-        <main className="min-h-screen max-w-md mx-auto bg-white shadow-xl overflow-hidden relative">
+        <main className="min-h-screen max-w-md md:max-w-3xl lg:max-w-5xl mx-auto bg-white shadow-xl overflow-hidden relative">
           {children}
         </main>
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md md:max-w-3xl lg:max-w-5xl mx-auto">
           <BottomNav />
         </div>
       </body>

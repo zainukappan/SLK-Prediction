@@ -58,7 +58,7 @@ export function MatchesList({ fixtures, predictionMap, locale }: { fixtures: any
 
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex flex-col items-center w-24">
-                    <span className="font-bold text-sm text-center line-clamp-1">{match.home_team.short_name}</span>
+                    <span className="font-bold text-sm text-center line-clamp-1 text-gray-900">{match.home_team.short_name}</span>
                   </div>
                   <div className="flex flex-col items-center">
                     {match.status === 'completed' || match.status === 'live' ? (
@@ -70,7 +70,7 @@ export function MatchesList({ fixtures, predictionMap, locale }: { fixtures: any
                     )}
                   </div>
                   <div className="flex flex-col items-center w-24">
-                    <span className="font-bold text-sm text-center line-clamp-1">{match.away_team.short_name}</span>
+                    <span className="font-bold text-sm text-center line-clamp-1 text-gray-900">{match.away_team.short_name}</span>
                   </div>
                 </div>
                 

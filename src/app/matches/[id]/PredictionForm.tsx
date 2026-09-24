@@ -49,7 +49,7 @@ export function PredictionForm({
             disabled={isLocked || homeScore === 0}
             className="w-10 h-10 rounded-lg bg-white shadow-sm font-bold text-xl text-sbk-blue disabled:opacity-50 disabled:bg-gray-100"
           >-</button>
-          <span className="w-8 text-center text-3xl font-black">{homeScore}</span>
+          <span className="w-8 text-center text-3xl font-black text-gray-900">{homeScore}</span>
           <button 
             onClick={() => setHomeScore(homeScore + 1)}
             disabled={isLocked}
@@ -63,7 +63,7 @@ export function PredictionForm({
             disabled={isLocked || awayScore === 0}
             className="w-10 h-10 rounded-lg bg-white shadow-sm font-bold text-xl text-sbk-blue disabled:opacity-50 disabled:bg-gray-100"
           >-</button>
-          <span className="w-8 text-center text-3xl font-black">{awayScore}</span>
+          <span className="w-8 text-center text-3xl font-black text-gray-900">{awayScore}</span>
           <button 
             onClick={() => setAwayScore(awayScore + 1)}
             disabled={isLocked}

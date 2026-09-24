@@ -58,17 +58,17 @@ export default async function MatchPredictionPage({ params }: { params: { id: st
 
           <div className="flex justify-between items-center mb-8">
             <div className="flex flex-col items-center flex-1">
-              <div className="w-20 h-20 bg-blue-100 rounded-full mb-2 flex items-center justify-center text-2xl font-bold border-4 border-blue-50">
+              <div className="w-20 h-20 bg-blue-100 text-blue-900 rounded-full mb-2 flex items-center justify-center text-2xl font-bold border-4 border-blue-50">
                 {match.home_team.short_name}
               </div>
-              <span className="text-sm font-bold text-center">{match.home_team.name}</span>
+              <span className="text-sm font-bold text-center text-gray-900">{match.home_team.name}</span>
             </div>
             <div className="px-4 font-bold text-gray-400 text-xl text-center">VS</div>
             <div className="flex flex-col items-center flex-1">
-              <div className="w-20 h-20 bg-red-100 rounded-full mb-2 flex items-center justify-center text-2xl font-bold border-4 border-red-50">
+              <div className="w-20 h-20 bg-red-100 text-red-900 rounded-full mb-2 flex items-center justify-center text-2xl font-bold border-4 border-red-50">
                 {match.away_team.short_name}
               </div>
-              <span className="text-sm font-bold text-center">{match.away_team.name}</span>
+              <span className="text-sm font-bold text-center text-gray-900">{match.away_team.name}</span>
             </div>
           </div>
 
