@@ -15,8 +15,7 @@ export default async function RankPage() {
   // We can do this with a query or view. Since we don't have a view, we'll fetch all predictions with points and group them.
   // In a real large-scale app, we'd use a materialized view or trigger to update a total_points column in profiles.
   // For this size, querying is fine.
-  
-  const { data: usersData } = await supabase.from('profiles').select('id, display_name, status').eq('status', 'approved')
+  const { data: usersData } = await supabase.from('profiles').select('id, display_name, status')
   const { data: predictions } = await supabase.from('predictions').select('user_id, points_awarded, home_score, away_score, fixture_id(home_score, away_score)')
 
   const leaderboardMap = new Map<string, { id: string, name: string, points: number, exact: number, outcome: number }>()

@@ -47,28 +47,14 @@ export async function middleware(request: NextRequest) {
     const { data: profile } = await supabase.from('profiles').select('status, role').eq('id', user.id).single()
 
     if (profile) {
-      if (profile.status === 'pending' && request.nextUrl.pathname !== '/pending') {
-        const url = request.nextUrl.clone()
-        url.pathname = '/pending'
-        return NextResponse.redirect(url)
-      }
-
-      if (profile.status === 'rejected' || profile.status === 'suspended') {
-        if (request.nextUrl.pathname !== '/rejected') {
-            const url = request.nextUrl.clone()
-            url.pathname = '/rejected'
-            return NextResponse.redirect(url)
-        }
-      }
-
       if (isAdminRoute && profile.role !== 'admin') {
         const url = request.nextUrl.clone()
         url.pathname = '/home' // Redirect to home if not admin
         return NextResponse.redirect(url)
       }
 
-      // If user is approved and on the root page or auth pages, redirect to home
-      if ((isAuthRoute) && profile.status === 'approved' && request.nextUrl.pathname !== '/home') {
+      // If user is on auth routes but already logged in, redirect to home
+      if (isAuthRoute && request.nextUrl.pathname !== '/home') {
           const url = request.nextUrl.clone()
           url.pathname = '/home'
           return NextResponse.redirect(url)
@@ -81,13 +67,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

@@ -9,10 +9,6 @@ export async function savePrediction(fixtureId: string, homeScore: number, awayS
   
   if (!user) return { error: 'Unauthorized' }
 
-  const { data: profile } = await supabase.from('profiles').select('status').eq('id', user.id).single()
-  
-  if (profile?.status !== 'approved') return { error: 'Account not approved' }
-
   // Check deadline
   const { data: fixture } = await supabase.from('fixtures').select('kickoff_time, status').eq('id', fixtureId).single()
   

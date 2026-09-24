@@ -12,8 +12,7 @@ export default async function ProfilePage() {
   const t = (key: any) => getTranslation(locale, key)
   const supabase = await createClient()
 
-  // Calculate user points and rank for share card
-  const { data: usersData } = await supabase.from('profiles').select('id').eq('status', 'approved')
+  const { data: usersData } = await supabase.from('profiles').select('id')
   const { data: predictions } = await supabase.from('predictions').select('user_id, points_awarded')
 
   const leaderboardMap = new Map<string, number>()
