@@ -1,24 +1,26 @@
 import { Header } from '@/components/layout/Header'
 import { getUserProfile } from '@/lib/auth'
-import { getTranslation, Locale } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
-import { FixtureManager } from './FixtureManager'
+import { ArrowLeft, Bell } from 'lucide-react'
+import { AnnouncementsAndRulesManager } from './AnnouncementsAndRulesManager'
+import { Locale } from '@/lib/i18n'
 
-export default async function AdminFixturesPage() {
+export default async function AdminAnnouncementsPage() {
   const profile = await getUserProfile()
   if (profile?.role !== 'admin') redirect('/home')
+
   const locale = (profile?.language as Locale) || 'en'
   const supabase = await createClient()
 
-  const { data: teams } = await supabase.from('teams').select('*').order('name')
-  const { data: rounds } = await supabase.from('rounds').select('*').order('round_order')
-  const { data: fixtures } = await supabase
-    .from('fixtures')
-    .select('*, home_team:teams!home_team_id(*), away_team:teams!away_team_id(*)')
-    .order('kickoff_time', { ascending: false })
+  const { data: rulesList } = await supabase.from('rules').select('*').limit(1)
+  const currentRules = rulesList && rulesList.length > 0 ? rulesList[0] : null
+
+  const { data: announcements } = await supabase
+    .from('announcements')
+    .select('*')
+    .order('created_at', { ascending: false })
 
   return (
     <div className="flex flex-col min-h-screen pb-20 bg-gray-50">
@@ -29,11 +31,9 @@ export default async function AdminFixturesPage() {
           <ArrowLeft className="w-4 h-4" /> Back to Admin Overview
         </Link>
 
-        <FixtureManager
-          teams={teams || []}
-          rounds={rounds || []}
-          fixtures={fixtures || []}
-          locale={locale}
+        <AnnouncementsAndRulesManager
+          rules={currentRules}
+          announcements={announcements || []}
         />
       </div>
     </div>

@@ -5,6 +5,8 @@ import { ShareCard } from './ShareCard'
 import { createClient } from '@/lib/supabase/server'
 import { LanguageToggle } from './LanguageToggle'
 import Link from 'next/link'
+import { calculateLeaderboard, RawFixture, RawPrediction, RawProfile } from '@/lib/scoring'
+import { ShieldCheck, ChevronRight, LogOut, Settings } from 'lucide-react'
 
 export default async function ProfilePage() {
   const profile = await getUserProfile()
@@ -12,30 +14,23 @@ export default async function ProfilePage() {
   const t = (key: any) => getTranslation(locale, key)
   const supabase = await createClient()
 
-  const { data: usersData } = await supabase.from('profiles').select('id')
-  const { data: predictions } = await supabase.from('predictions').select('user_id, points_awarded')
+  const { data: usersData } = await supabase.from('profiles').select('id, display_name, status')
+  const { data: predictions } = await supabase.from('predictions').select('*')
+  const { data: fixtures } = await supabase.from('fixtures').select('*')
 
-  const leaderboardMap = new Map<string, number>()
-  usersData?.forEach(u => leaderboardMap.set(u.id, 0))
-  
-  predictions?.forEach(p => {
-    if (p.points_awarded !== null && leaderboardMap.has(p.user_id)) {
-      leaderboardMap.set(p.user_id, leaderboardMap.get(p.user_id)! + p.points_awarded)
-    }
-  })
+  const { leaderboard } = calculateLeaderboard(
+    (usersData as RawProfile[]) || [],
+    (predictions as RawPrediction[]) || [],
+    (fixtures as RawFixture[]) || []
+  )
 
-  const leaderboard = Array.from(leaderboardMap.entries()).map(([id, points]) => ({ id, points }))
-  leaderboard.sort((a, b) => b.points - a.points)
+  const myEntry = leaderboard.find((u) => u.id === profile?.id)
 
-  let myPoints = 0
-  let myRank = 0
-
-  leaderboard.forEach((u, index) => {
-    if (u.id === profile?.id) {
-      myPoints = u.points
-      myRank = index + 1
-    }
-  })
+  const myPoints = myEntry?.points ?? 0
+  const myRank = myEntry?.rank ?? leaderboard.length
+  const myExact = myEntry?.exact ?? 0
+  const myOutcome = myEntry?.outcome ?? 0
+  const sharedRankDisplay = myEntry?.sharedRankDisplay || `#${myRank}`
 
   return (
     <div className="flex flex-col min-h-screen pb-20 bg-gray-50">
@@ -43,34 +38,58 @@ export default async function ProfilePage() {
       
       <div className="p-4 -mt-4 z-10 space-y-4">
         
+        {/* Share Rank Card Section */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col items-center">
           <ShareCard 
-            name={profile?.display_name || 'User'} 
+            name={profile?.display_name || 'Member'} 
             rank={myRank} 
             points={myPoints}
+            exact={myExact}
+            outcome={myOutcome}
+            sharedRankDisplay={sharedRankDisplay}
             locale={locale}
           />
         </div>
 
+        {/* Language Selection */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-800 mb-4">{t('language')}</h3>
+          <h3 className="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2">
+            <Settings className="w-4 h-4 text-sbk-blue" />
+            {t('language')}
+          </h3>
           <LanguageToggle currentLocale={locale} />
         </div>
 
-        <Link href="/rules" className="block bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between hover:bg-gray-50 transition-colors">
-          <span className="font-bold text-gray-800">{t('rules')}</span>
-          <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+        {/* Rules Navigation */}
+        <Link 
+          href="/rules" 
+          className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-sbk-blue" />
+            <span className="font-bold text-gray-800 text-sm">{t('rules')}</span>
+          </div>
+          <ChevronRight className="w-4 h-4 text-gray-400" />
         </Link>
 
+        {/* Admin Dashboard Entry (Admin only) */}
         {profile?.role === 'admin' && (
-          <Link href="/admin" className="block bg-sbk-navy text-white rounded-2xl p-4 shadow-sm font-bold text-center">
+          <Link 
+            href="/admin" 
+            className="block bg-sbk-navy hover:bg-slate-800 text-white rounded-2xl p-4 shadow-md font-bold text-center text-sm transition-colors"
+          >
             {t('adminDashboard')}
           </Link>
         )}
 
-        <form action="/auth/logout" method="post" className="w-full pt-4">
-          <button type="submit" className="w-full py-4 rounded-xl font-bold text-red-500 bg-red-50 hover:bg-red-100 transition-colors">
-            {t('signOut')}
+        {/* Sign Out */}
+        <form action="/auth/logout" method="post" className="w-full pt-2">
+          <button 
+            type="submit" 
+            className="w-full py-3.5 rounded-xl font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors text-xs flex items-center justify-center gap-1.5"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>{t('signOut')}</span>
           </button>
         </form>
 

@@ -4,7 +4,7 @@ create extension if not exists "uuid-ossp";
 -- Custom Types
 create type user_status as enum ('pending', 'approved', 'rejected', 'suspended');
 create type user_role as enum ('member', 'admin');
-create type match_status as enum ('upcoming', 'live', 'completed', 'postponed', 'cancelled');
+create type match_status as enum ('upcoming', 'live', 'completed', 'postponed', 'cancelled', 'awaiting_result');
 
 -- Profiles Table
 create table public.profiles (
@@ -13,6 +13,7 @@ create table public.profiles (
   status user_status default 'pending' not null,
   role user_role default 'member' not null,
   language text default 'en' not null,
+  admin_notes text,
   created_at timestamptz default now() not null
 );
 
@@ -20,14 +21,18 @@ create table public.profiles (
 create table public.teams (
   id uuid default uuid_generate_v4() primary key,
   name text not null,
+  name_ml text,
   short_name text not null,
-  logo_url text
+  short_name_ml text,
+  logo_url text,
+  badge_url text
 );
 
 -- Rounds Table
 create table public.rounds (
   id uuid default uuid_generate_v4() primary key,
   name text not null,
+  name_ml text,
   round_order int not null
 );
 
@@ -38,13 +43,20 @@ create table public.fixtures (
   home_team_id uuid references public.teams on delete cascade not null,
   away_team_id uuid references public.teams on delete cascade not null,
   kickoff_time timestamptz not null,
+  original_kickoff_time timestamptz,
+  is_rescheduled boolean default false not null,
+  rescheduled_reason text,
   venue text,
   status match_status default 'upcoming' not null,
   home_score int,
   away_score int,
   finalized boolean default false not null,
   created_at timestamptz default now() not null,
-  updated_at timestamptz default now() not null
+  updated_at timestamptz default now() not null,
+  constraint check_fixture_scores_non_negative check (
+    (home_score is null and away_score is null) or
+    (home_score >= 0 and away_score >= 0)
+  )
 );
 
 -- Predictions Table
@@ -58,7 +70,8 @@ create table public.predictions (
   points_reason text,
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null,
-  unique(user_id, fixture_id)
+  unique(user_id, fixture_id),
+  constraint check_prediction_scores_non_negative check (home_score >= 0 and away_score >= 0)
 );
 
 -- Prediction Audits Table
@@ -83,8 +96,38 @@ create table public.announcements (
   active boolean default true not null
 );
 
--- RLS Policies
+-- Admin Audit Logs Table (Private audit history for consequential actions)
+create table public.admin_audit_logs (
+  id uuid default uuid_generate_v4() primary key,
+  admin_id uuid references public.profiles(id) on delete set null,
+  action text not null,
+  target_type text not null,
+  target_id text,
+  reason text,
+  previous_state jsonb,
+  new_state jsonb,
+  created_at timestamptz default now() not null
+);
 
+-- Rules Table
+create table public.rules (
+  id uuid default uuid_generate_v4() primary key,
+  title_en text default 'Contest Rules' not null,
+  title_ml text default 'മത്സര നിയമങ്ങൾ' not null,
+  content_en text not null,
+  content_ml text not null,
+  updated_by uuid references public.profiles(id) on delete set null,
+  updated_at timestamptz default now() not null
+);
+
+-- Performance Indexes
+create index idx_predictions_user_id on public.predictions(user_id);
+create index idx_predictions_fixture_id on public.predictions(fixture_id);
+create index idx_fixtures_kickoff_time on public.fixtures(kickoff_time);
+create index idx_fixtures_status on public.fixtures(status);
+create index idx_admin_audit_created_at on public.admin_audit_logs(created_at desc);
+
+-- RLS Policies
 alter table public.profiles enable row level security;
 alter table public.teams enable row level security;
 alter table public.rounds enable row level security;
@@ -92,19 +135,22 @@ alter table public.fixtures enable row level security;
 alter table public.predictions enable row level security;
 alter table public.prediction_audits enable row level security;
 alter table public.announcements enable row level security;
+alter table public.admin_audit_logs enable row level security;
+alter table public.rules enable row level security;
 
--- Profiles: Users can read all profiles (needed for leaderboard). Users can update their own profile (language). Admins can update all.
+-- Profiles: Users can read public profile info (for leaderboard). Users can update own language/display_name. Admins can update all.
 create policy "Profiles are viewable by everyone" on public.profiles for select using (true);
 create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
 create policy "Admins can update any profile" on public.profiles for update using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
 );
 
--- Teams/Rounds/Fixtures/Announcements: Viewable by all, editable by admins
+-- Teams/Rounds/Fixtures/Announcements/Rules: Viewable by all, editable by admins
 create policy "Teams viewable by everyone" on public.teams for select using (true);
 create policy "Rounds viewable by everyone" on public.rounds for select using (true);
 create policy "Fixtures viewable by everyone" on public.fixtures for select using (true);
 create policy "Announcements viewable by everyone" on public.announcements for select using (true);
+create policy "Rules viewable by everyone" on public.rules for select using (true);
 
 create policy "Admins can insert/update/delete teams" on public.teams using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
@@ -118,9 +164,34 @@ create policy "Admins can insert/update/delete fixtures" on public.fixtures usin
 create policy "Admins can insert/update/delete announcements" on public.announcements using (
   exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
 );
+create policy "Admins can insert/update/delete rules" on public.rules using (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);
 
--- Predictions: Users can view all predictions (UI hides before deadline), can insert/update their own before deadline. Admins can view all.
-create policy "Predictions viewable by everyone" on public.predictions for select using (true);
+-- Admin Audit Logs: strictly admins only
+create policy "Admin audit logs viewable only by admins" on public.admin_audit_logs
+  for select using (
+    exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+  );
+create policy "Admin audit logs insertable only by admins" on public.admin_audit_logs
+  for insert with check (
+    exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+  );
+
+-- Predictions:
+-- Privacy: User can view their own prediction anytime. Other users' predictions are viewable only AFTER kickoff. Admins can view all.
+create policy "Predictions visibility rule" on public.predictions
+  for select using (
+    auth.uid() = user_id or
+    exists (
+      select 1 from public.fixtures f 
+      where f.id = predictions.fixture_id and f.kickoff_time <= now()
+    ) or
+    exists (
+      select 1 from public.profiles 
+      where id = auth.uid() and role = 'admin'
+    )
+  );
 
 create policy "Users can insert own prediction" on public.predictions for insert with check (
   auth.uid() = user_id and
@@ -177,7 +248,3 @@ $$ language plpgsql security definer;
 create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user();
-
--- Trigger to recalculate points when fixture is finalized/updated by admin
--- Note: This is complex in SQL. It's often better handled in the application layer (Next.js server action) to easily handle audit logs and errors.
--- We'll implement scoring in Next.js Server Actions.
